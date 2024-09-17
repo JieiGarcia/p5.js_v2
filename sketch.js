@@ -367,7 +367,7 @@ function draw() {
 
   if (gameStarted) {
 
-    //各表情ごとの花火のクラスを呼び出す
+    //各表情ごとの花火のクラスを生成し、全て allFireworks 配列に格納
     //5つの絵文字が等確率で発射されるから、shootingRateは低めに
     if (random(1) < shootingRate) {
       allFireworks.push(new HappyFirework());
