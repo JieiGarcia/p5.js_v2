@@ -486,7 +486,7 @@ class Particle {
       this.vel.mult(random(2, 10));
     }
 
-    this.acc = createVector(0, 0); //いじれば絵文字を見やすくできるかも
+    this.acc = createVector(0, 0); 
     this.hu = random(255);
   }
 
