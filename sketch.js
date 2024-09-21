@@ -16,6 +16,14 @@ let timerActive = false; // タイマーがアクティブかどうか
 let gameOver = false; // ゲームが終了しているかどうか
 let timerInterval;
 
+//残り時間表示
+let timerLeftDisplay = false;
+
+//レベルアップ関連の変数
+let levelNum = 1;
+let showNumberAndLevels = false;  // レベルアップ時に追加秒数とレベルを表示するかどうか
+let displayTimer = 0; // 追加秒数を表示するフレーム数
+
 // 表情データ
 let neutralG = 0;
 let happyG = 0;
@@ -31,11 +39,14 @@ let bgm1, bgm2, bgm3, bgm4;
 let sfx1, sfx2, sfx3;
 let currentBgm;
 
+
+
+
 //雷
 let lightningBolt = [];
 let lightningTimer = 0;
 
-// タイマー
+// スコア、点数記録
 let explosionCount = 0;
 
 function preload() {
@@ -114,6 +125,7 @@ function setup() {
   sfx2.setVolume(0.8);
   sfx3.setVolume(0.3);
   sfx4.setVolume(0.8);
+
 }
 
 function normal() {
@@ -199,6 +211,11 @@ function drawLightning(bolt) {
   }
 }
 
+
+
+// 雨の関数
+
+
 function faceReady() {
   faceapi.detect(gotFaces);
 }
@@ -213,12 +230,16 @@ function gotFaces(error, result) {
 
   clear();
   
-  drawBoxs(detections);
-  drawLandmarks(detections);
-  drawExpressions(detections, 80, 250, 28);
+  if(!gameStarted){
+    drawBoxs(detections);
+    drawLandmarks(detections);
+  }
+  
+  drawExpressions(detections, 80, 250, 28); //表情の値をこの関数外でグローバル変数に格納できれば処理減らせられる
   
   faceapi.detect(gotFaces);
 }
+
 function drawBoxs(detections){
   if (detections.length > 0) {//If at least 1 face is detected: 
     for (f=0; f < detections.length; f++){
@@ -247,19 +268,6 @@ function drawLandmarks(detections){
 function drawExpressions(detections, x, y, textYSpace){
   if (detections.length > 0) { // If at least 1 face is detected
     let {neutral, happy, angry, sad, disgusted, surprised, fearful} = detections[0].expressions;
-    textFont('Helvetica Neue');
-    textSize(14);
-  
-    noStroke();
-    fill(0);
-
-    text("neutral:       " + nf(neutral * 100, 2, 2) + "%", x, y);
-    text("happiness: " + nf(happy * 100, 2, 2) + "%", x, y + textYSpace);
-    text("anger:        " + nf(angry * 100, 2, 2) + "%", x, y + textYSpace * 2);
-    text("sad:            " + nf(sad * 100, 2, 2) + "%", x, y + textYSpace * 3);
-    text("disgusted: " + nf(disgusted * 100, 2, 2) + "%", x, y + textYSpace * 4);
-    text("surprised:  " + nf(surprised * 100, 2, 2) + "%", x, y + textYSpace * 5);
-    text("fear:           " + nf(fearful * 100, 2, 2) + "%", x, y + textYSpace * 6);
 
     // happiness~fearfulの値をグローバル変数に反映
     happyG = happy;
@@ -269,15 +277,23 @@ function drawExpressions(detections, x, y, textYSpace){
     disgustedG = disgusted;
     surprisedG = surprised;
     fearfulG = fearful;
+
+    if(!gameStarted){
+      textFont('Helvetica Neue');
+      textSize(14);
     
-  } else { // If no faces are detected
-    text("neutral: ", x, y);
-    text("happiness: ", x, y + textYSpace);
-    text("anger: ", x, y + textYSpace * 2);
-    text("sad: ", x, y + textYSpace * 3);
-    text("disgusted: ", x, y + textYSpace * 4);
-    text("surprised: ", x, y + textYSpace * 5);
-    text("fear: ", x, y + textYSpace * 6);
+      noStroke();
+      fill(0);
+
+      text("neutral:       " + nf(neutral * 100, 2, 2) + "%", x, y);
+      text("happiness: " + nf(happy * 100, 2, 2) + "%", x, y + textYSpace);
+      text("anger:        " + nf(angry * 100, 2, 2) + "%", x, y + textYSpace * 2);
+      text("sad:            " + nf(sad * 100, 2, 2) + "%", x, y + textYSpace * 3);
+      text("disgusted: " + nf(disgusted * 100, 2, 2) + "%", x, y + textYSpace * 4);
+      text("surprised:  " + nf(surprised * 100, 2, 2) + "%", x, y + textYSpace * 5);
+      text("fear:           " + nf(fearful * 100, 2, 2) + "%", x, y + textYSpace * 6);
+    }
+    
   }
 }
 
@@ -309,9 +325,12 @@ function startGameHardMode() {
   allFireworks = []; // 花火をリセット
 
   startTimer(); // タイマーを開始
-  playBgm(bgm3);
   playSfx(sfx2);
+  playSfx(sfx3);//この後３秒くらい遅らせてつぎへ？
+  playBgm(bgm3);
 }
+
+
 
 function startTimer() {
   timerInterval = setInterval(() => {
@@ -347,6 +366,8 @@ function resetGame() {
   gameStarted = false;
 
   allFireworks = [];// 花火リセット
+  explosionCount = 0; // スコアリセット
+  levelNum = 1; // レベルリセット
 
   normal(); // Normalモードボタンを再表示
   hard(); // Hardモードボタンを再表示
@@ -354,16 +375,16 @@ function resetGame() {
     currentBgm.stop();
   }
 }
-
-
 function draw() {
   // background(bgImage);
   if (titleVisible) {
     textSize(48);
     fill(255);
     textAlign(CENTER);
-    text("花火ゲーム", width / 2, height / 2 - 50);
+    text("花火ゲーム", width / 2, height / 3);
   }
+
+
 
   if (gameStarted) {
 
@@ -395,15 +416,72 @@ function draw() {
     }
 
     if (timerActive) {
-      fill(255);
+      colorMode(RGB);
+      fill(255,0,0);
+      colorMode(HSB);
+      noStroke();
       textSize(32);
       textAlign(RIGHT, TOP);
       text("Time: " + timer, width - 20, 20); // 画面右上にタイマー表示
 
       // Display explosion count below the timer
       text("Explosions: " + explosionCount, width - 20, 60);
+
+      //タイマーが5秒以下になったらカウントダウン開始
+      if(timer <= 5){
+        textSize(300);
+        fill(255);
+        textAlign(CENTER, CENTER);
+        text(timer, width / 2, height / 2);
+      }
     }
   }
+
+  //レベル１クリア -> タイマーを10秒追加してレベル２へ
+  if (levelNum == 1){
+    if(explosionCount >= 30){
+      timer += 10;
+      levelNum++;
+      showNumberAndLevels = true;
+      displayTimer = 100;
+    }
+  }
+  //レベル2クリア -> タイマーを10秒追加してレベル３へ
+  if (levelNum == 2){
+    if(explosionCount >= 60){
+      timer += 10;
+      levelNum++;
+      showNumberAndLevels = true;
+      displayTimer = 100;
+    }
+  }
+
+  //レベル3クリア -> タイマーを10秒追加してレベル4へ
+  if (levelNum == 3){
+    if(explosionCount >= 90){
+      timer += 10;
+      levelNum++;
+      showNumberAndLevels = true;
+      displayTimer = 100;
+      
+    }
+  }
+
+  //レベル4クリア -> タイマーを10秒追加してレベル5へ
+  if (levelNum == 4){
+    if(explosionCount >= 120){
+      timer += 15;
+      levelNum++;
+      showNumberAndLevels = true;
+      displayTimer = 100;
+    }
+  }
+
+  if(showNumberAndLevels){
+    showAddedTimeAndLevels();
+  }
+
+  
 
   if (gameOver) {
     textSize(40);
@@ -412,6 +490,21 @@ function draw() {
     text("ゲーム終了！", width / 2, height / 2 - 100);
     // ゲーム終了テキスト表示
     text("スコア : " + explosionCount, width / 2, height / 2 - 30);
+  }
+}
+
+function showAddedTimeAndLevels(){
+  textSize(100);      
+  fill(255);  
+  textAlign(CENTER, CENTER);  
+  text("+10秒", width / 2, height / 2 + 50); //レベルごとに異なる追加秒数を表示できるようにしたい
+
+  text("Level " + levelNum, width / 2, height / 2 - 100);
+
+  displayTimer--;
+
+  if(displayTimer <= 0){
+    showNumberAndLevels = false;
   }
 }
 
@@ -526,7 +619,7 @@ class Particle {
 
 //(´ε｀ )♥////(´ε｀ )♥///////(´ε｀ )♥/////////
 /////////////////////////////////////////////
-// ( ✹‿✹ ) 以下、表情ごとの花火のクラス ( ✹‿✹ ) //
+// ( ✹‿✹ ) 以下、表情ごとの花火のクラス ( ✹‿✹ )//
 /////////////////////////////////////////////
 
 // updateメソッドをいじって条件やエフェクトを追加・変更
@@ -586,7 +679,7 @@ class SadFirework extends Firework {
       if (this.firework.vel.y >= 0) {
         if (sadG * 100 >= 0.90) { 
           this.exploded = true;
-          this.explode();
+          this.explode(); 
         }
       }
     }
