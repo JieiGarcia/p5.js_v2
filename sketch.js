@@ -1,9 +1,7 @@
 //(´ε｀ )♥(´ε｀ )♥(´ε｀ )♥
 let faceapi;
 let detections = [];
-
 let allFireworks = [];//すべての花火を格納する配列
-
 let gravity;
 let video;
 let canvas;
@@ -51,8 +49,6 @@ let explosionCount = 0;
 
 function preload() {
   //画像を読み込む
-  chosenImage = loadImage("assets/image/surprised.png"); // 任意の画像のパス
-
   surprisedImage = loadImage("assets/image/surprised.png");
   sadImage = loadImage("assets/image/sad.png");
   disgustedImage = loadImage("assets/image/disgusted.png");
@@ -60,6 +56,7 @@ function preload() {
   disgustedImage = loadImage("assets/image/disgusted.png");
   fearImage = loadImage("assets/image/fear.png");
   happyImage = loadImage("assets/image/happy.png");
+  neutralImage = loadImage("assets/image/neutral.png");
 
   // BGMの音声ファイルをロード
   bgm1 = loadSound('assets/sound/stage1.mp3');
@@ -112,25 +109,28 @@ function setup() {
   hard();
 
   // 音量を設定
-  let bgmVolume = 0.5; // BGMの音量
+  let bgmVolume = 0.1; // BGMの音量
 
   // BGMの音量を設定
   bgm1.setVolume(bgmVolume);
   bgm2.setVolume(bgmVolume);
   bgm3.setVolume(bgmVolume);
-  bgm4.setVolume(bgmVolume);
+  bgm4.setVolume(0.05);
 
   // 効果音の音量を設定
-  sfx1.setVolume(3);
-  sfx2.setVolume(0.8);
-  sfx3.setVolume(0.3);
-  sfx4.setVolume(0.8);
+  sfx1.setVolume(0.6); //(初期値:3)
+  sfx2.setVolume(0.2); //(初期値:0.8)
+  sfx3.setVolume(0.05); //(初期値:0.3)
+  sfx4.setVolume(0.2); //(初期値:0.8)
+  sfx5.setVolume(0.2);
+
+  playBgm(bgm4);
 
 }
 
 function normal() {
   startButton = createButton('Normal');
-  startButton.position(width / 2 - 150, height / 2 + 100); // 位置調整
+  startButton.position(width / 2 - 150, height / 2 - height / 20); // 位置調整
   startButton.size(300, 120); // サイズを3倍に
   startButton.mousePressed(startGame);
 }
@@ -153,13 +153,22 @@ function playBgm(bgm) {
   currentBgm = bgm;
 }
 
-function playSfx(sfx) {
+function playSfx2Sec(sfx) {
+  // 効果音を再生
+  sfx.play();
+  // 2秒後に効果音を停止
+  setTimeout(() => {
+    sfx.stop();
+  }, 2000);
+}
+
+function playSfx8sec(sfx) {
   // 効果音を再生
   sfx.play();
   // 8秒後に効果音を停止
   setTimeout(() => {
     sfx.stop();
-  }, 2000);
+  }, 8000);
 }
 
 //雷の関数
@@ -170,7 +179,7 @@ function createLightning() {
   let currentX = startX;
   let currentY = startY;
   bolt.push([currentX, currentY]);
-  playSfx(sfx5);
+  playSfx2Sec(sfx5);
   // 雷が画面の下に到達するまで、ランダムなパターンで進む
   while (currentY < height) {
     let nextX = currentX + random(-20, 20); // 雷がランダムに左右にずれる
@@ -210,10 +219,6 @@ function drawLightning(bolt) {
     line(x1, y1, x2, y2); // 線を引いて雷を描画
   }
 }
-
-
-
-// 雨の関数
 
 
 function faceReady() {
@@ -293,7 +298,7 @@ function drawExpressions(detections, x, y, textYSpace){
       text("surprised:  " + nf(surprised * 100, 2, 2) + "%", x, y + textYSpace * 5);
       text("fear:           " + nf(fearful * 100, 2, 2) + "%", x, y + textYSpace * 6);
     }
-    
+
   }
 }
 
@@ -305,12 +310,13 @@ function startGame() {
   timerActive = true;
   gameOver = false;
   timer = 20; // タイマーをリセット
+  shootingRate = 0.0025; 
 
   allFireworks = [];// 花火をリセット
 
   startTimer(); // タイマーを開始
   playBgm(bgm1);
-  playSfx(sfx2);
+  playSfx2Sec(sfx2);
 }
 
 function startGameHardMode() {
@@ -320,13 +326,14 @@ function startGameHardMode() {
   gameStarted = true;
   timerActive = true;
   gameOver = false;
-  timer = 30; // タイマーをリセット
+  timer = 20; // タイマーをリセット
+  shootingRate = 0.01;
 
   allFireworks = []; // 花火をリセット
 
   startTimer(); // タイマーを開始
-  playSfx(sfx2);
-  playSfx(sfx3);//この後３秒くらい遅らせてつぎへ？
+  playSfx2Sec(sfx2);
+  playSfx8sec(sfx3);//この後３秒くらい遅らせてつぎへ？
   playBgm(bgm3);
 }
 
@@ -344,7 +351,7 @@ function startTimer() {
 }
 
 function endGame() {
-  playSfx(sfx4);
+  playSfx2Sec(sfx4);
   gameStarted = false;
   timerActive = false;
   gameOver = true;
@@ -353,7 +360,7 @@ function endGame() {
   backButton.position(width / 2 - 50, height / 2 + 50);
   backButton.size(100, 40);
   backButton.mousePressed(() => {
-    playSfx(sfx2);
+    playSfx2Sec(sfx2);
     resetGame();
   }
   )
@@ -374,17 +381,18 @@ function resetGame() {
   if (currentBgm && currentBgm.isPlaying()) {
     currentBgm.stop();
   }
+  playBgm(bgm4);
 }
+
 function draw() {
   // background(bgImage);
   if (titleVisible) {
+    // HTMLのdivを作成してタイトルを表示
     textSize(48);
     fill(255);
     textAlign(CENTER);
     text("花火ゲーム", width / 2, height / 3);
   }
-
-
 
   if (gameStarted) {
 
@@ -404,6 +412,9 @@ function draw() {
     }
     if (random(1) < shootingRate) {
       allFireworks.push(new SurprisedFirework());
+    }
+    if (random(1) < shootingRate) {
+      allFireworks.push(new NeutralFirework());
     }
     
     for (let i = allFireworks.length - 1; i >= 0; i--) {
@@ -439,7 +450,7 @@ function draw() {
 
   //レベル１クリア -> タイマーを10秒追加してレベル２へ
   if (levelNum == 1){
-    if(explosionCount >= 30){
+    if(explosionCount >= 40){
       timer += 10;
       levelNum++;
       showNumberAndLevels = true;
@@ -448,7 +459,7 @@ function draw() {
   }
   //レベル2クリア -> タイマーを10秒追加してレベル３へ
   if (levelNum == 2){
-    if(explosionCount >= 60){
+    if(explosionCount >= 80){
       timer += 10;
       levelNum++;
       showNumberAndLevels = true;
@@ -458,7 +469,7 @@ function draw() {
 
   //レベル3クリア -> タイマーを10秒追加してレベル4へ
   if (levelNum == 3){
-    if(explosionCount >= 90){
+    if(explosionCount >= 100){
       timer += 10;
       levelNum++;
       showNumberAndLevels = true;
@@ -470,7 +481,7 @@ function draw() {
   //レベル4クリア -> タイマーを10秒追加してレベル5へ
   if (levelNum == 4){
     if(explosionCount >= 120){
-      timer += 15;
+      timer += 10;
       levelNum++;
       showNumberAndLevels = true;
       displayTimer = 100;
@@ -480,8 +491,6 @@ function draw() {
   if(showNumberAndLevels){
     showAddedTimeAndLevels();
   }
-
-  
 
   if (gameOver) {
     textSize(40);
@@ -520,35 +529,12 @@ class Firework {
     return this.exploded && this.particles.length === 0;
   }
 
-  update() { //このメソッドは表情ごとに用意した花火のクラスでオーバーライドされるから、中身なんでもいい
-    if (!this.exploded) {
-      this.firework.applyForce(gravity);
-      this.firework.update();
-    
-      if (this.firework.vel.y >= 0) {
-        if (happyG * 100 >= 0.90) { 
-          this.exploded = true;
-          this.explode();
-        }
-      }
-    }
-
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      this.particles[i].applyForce(gravity);
-      this.particles[i].update();
-
-      if (this.particles[i].done()) {
-        this.particles.splice(i, 1);
-      }
-    }
- }
-
   explode() {
     for (let i = 0; i < 100; i++) {
       let p = new Particle(this.firework.pos.x, this.firework.pos.y, false, this.emoji);
       this.particles.push(p);
     }
-    playSfx(sfx1);
+    playSfx2Sec(sfx1);
     explosionCount++; // Increment explosion counter
   }
 
@@ -635,9 +621,9 @@ class HappyFirework extends Firework {
       this.firework.applyForce(gravity);
       this.firework.update();
       
-      //ハッピー90%でばくはつ
+      //ハッピー95%でばくはつ
       if (this.firework.vel.y >= 0) {
-        if (happyG * 100 >= 0.90) { 
+        if (happyG * 100 >= 0.95) { 
           this.exploded = true;
           this.explode();
         }
@@ -675,9 +661,9 @@ class SadFirework extends Firework {
       this.firework.applyForce(gravity);
       this.firework.update();
       
-      //SAD90%でばくはつ
+      //SAD95%でばくはつ
       if (this.firework.vel.y >= 0) {
-        if (sadG * 100 >= 0.90) { 
+        if (sadG * 100 >= 0.95) { 
           this.exploded = true;
           this.explode(); 
         }
@@ -715,9 +701,9 @@ class AngryFirework extends Firework {
       this.firework.applyForce(gravity);
       this.firework.update();
       
-      //Angry90%でばくはつ && かみなり発動
+      //Angry95%でばくはつ && かみなり発動
       if (this.firework.vel.y >= 0) {
-        if (angerG * 100 >= 0.90) { 
+        if (angerG * 100 >= 0.95) { 
           this.exploded = true;
           this.explode();
           doLightning(); // 雷を発生させる
@@ -756,9 +742,9 @@ class FearfulFirework extends Firework {
       this.firework.applyForce(gravity);
       this.firework.update();
       
-      //Fear 90%でばくはつ
+      //Fear 95%でばくはつ
       if (this.firework.vel.y >= 0) {
-        if (fearfulG * 100 >= 0.90) { 
+        if (fearfulG * 100 >= 0.95) { 
           this.exploded = true;
           this.explode();
         }
@@ -796,9 +782,49 @@ class SurprisedFirework extends Firework {
       this.firework.applyForce(gravity);
       this.firework.update();
       
-      //サプライズ90%でばくはつ
+      //サプライズ95%でばくはつ
       if (this.firework.vel.y >= 0) {
-        if (surprisedG * 100 >= 0.90) { 
+        if (surprisedG * 100 >= 0.95) { 
+          this.exploded = true;
+          this.explode();
+        }
+      }
+    }
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      this.particles[i].applyForce(gravity);
+      this.particles[i].update();
+
+      if (this.particles[i].done()) {
+        this.particles.splice(i, 1);
+      }
+    }
+ }
+
+  show() {
+    if (!this.exploded) {
+      this.firework.show();
+    }
+    for (let i = 0; i < this.particles.length; i++) {
+      this.particles[i].show();
+    }
+  }
+}
+
+class NeutralFirework extends Firework {
+  constructor(){
+    let emoji = neutralImage;
+    super(emoji);
+  }
+
+  update() {
+    if (!this.exploded) {
+      this.firework.applyForce(gravity);
+      this.firework.update();
+      
+      //真顔95%でばくはつ
+      if (this.firework.vel.y >= 0) {
+        if (neutralG * 100 >= 0.95) { 
           this.exploded = true;
           this.explode();
         }
